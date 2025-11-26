@@ -9,6 +9,7 @@ bot.start((ctx) => {
   ctx.reply("Botga xush kelibsiz");
 });
 
+
 bot.launch(() => {
   console.log("Bot ishga tushdi");
 });

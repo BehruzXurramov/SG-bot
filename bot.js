@@ -82,7 +82,7 @@ bot.use(async (ctx, next) => {
         );
       }
 
-      if (!contact.user_id === ctx.chat.id) {
+      if (contact.user_id !== ctx.chat.id) {
         return await ctx.reply("Iltimos o'z raqamingizni ulashing.");
       }
 

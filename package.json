@@ -10,6 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "ljdb": "^1.0.4",
     "telegraf": "^4.16.3"
   }
 }

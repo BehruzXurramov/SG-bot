@@ -1,19 +1,23 @@
 import { Composer } from "telegraf";
-import users from "./ljdb.js";
+import { done_users, users } from "./ljdb.js";
 import errorHandler from "./error_handler.js";
+import chatCleaner from "./chat_cleaner.js";
 
 const regis = new Composer();
 
 regis.use(async (ctx, next) => {
   try {
     if (ctx.chat?.type !== "private") return;
-
     if (!ctx.message && !ctx.callbackQuery) return;
+
+    if (done_users.data.includes(ctx.from.id)) return next();
 
     const id = ctx.from.id;
 
     if (!users.data[id]) {
+      chatCleaner(ctx);
       users.data[id] = { status: "fio" };
+      users.data[id].last = ctx.message.message_id + 1;
       users.save();
 
       await ctx.reply(
@@ -45,6 +49,8 @@ regis.use(async (ctx, next) => {
 
       user.fio = ctx.message.text;
       user.status = "phone";
+      chatCleaner(ctx);
+      user.last = ctx.message.message_id + 1;
       users.save();
 
       await ctx.reply("Davom etish uchun telefon raqamingizni ulashing.", {
@@ -58,7 +64,6 @@ regis.use(async (ctx, next) => {
             ],
           ],
           resize_keyboard: true,
-          one_time_keyboard: true,
           selective: true,
         },
       });
@@ -82,6 +87,8 @@ regis.use(async (ctx, next) => {
 
       user.phone = contact.phone_number;
       user.status = "verify";
+      chatCleaner(ctx);
+      user.last = user.last = ctx.message.message_id + 1;
       users.save();
 
       await ctx.reply(
@@ -98,6 +105,7 @@ regis.use(async (ctx, next) => {
               ],
               [{ text: "✅Tasdiqlash", callback_data: "verify" }],
             ],
+            keyboard: [],
           },
         }
       );

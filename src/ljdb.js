@@ -1,4 +1,4 @@
 import LJDB from "ljdb";
 
-const users = new LJDB("users");
-export default users;
+export const users = new LJDB("users");
+export const done_users = new LJDB("done_users")

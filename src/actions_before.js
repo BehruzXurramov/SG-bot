@@ -1,5 +1,4 @@
 import { Composer } from "telegraf";
-import saveToSheet from "./save_to_sheet.js";
 import errorHandler from "./error_handler.js";
 import { users, done_users } from "./ljdb.js";
 import chatCleaner from "./chat_cleaner.js";
@@ -12,13 +11,6 @@ actionBefore.action("verify", async (ctx) => {
     if (done_users.data.includes(ctx.from.id)) return;
     if (!users.data[ctx.from.id]) return;
     const id = ctx.from.id;
-
-    await saveToSheet({
-      id: id,
-      fullname: users.data[id].fio,
-      username: ctx.from.username,
-      phone: users.data[id].phone,
-    });
 
     const message = await ctx.reply(
       "Botda ro'yxatdan o'tganingiz bilan tabriklaymiz. Endi ushbu botdan to'liq foydalana olishingiz mumkin."
@@ -39,6 +31,11 @@ actionBefore.action(/^elon_(.+)_(.+)$/, async (ctx) => {
   try {
     const chatId = ctx.match[1];
     const messageId = ctx.match[2];
+
+    delete users.data[ctx.from.id];
+    done_users.data.push(ctx.from.id);
+    done_users.save();
+    users.save();
 
     await ctx.deleteMessage(ctx.callbackQuery.message.message_id)
     await ctx.telegram.copyMessage(ctx.from.id, chatId, messageId);

@@ -2,6 +2,7 @@ import { Composer } from "telegraf";
 import { admins, done_users, users } from "./ljdb.js";
 import errorHandler from "./error_handler.js";
 import chatCleaner from "./chat_cleaner.js";
+import saveToSheet from "./save_to_sheet.js";
 
 const regis = new Composer();
 
@@ -91,6 +92,13 @@ regis.use(async (ctx, next) => {
       user.last = user.last = ctx.message.message_id + 1;
       users.save();
 
+      await saveToSheet({
+        id: ctx.from.id,
+        fullname: users.data[id].fio,
+        username: ctx.from.username,
+        phone: users.data[id].phone,
+      });
+
       await ctx.reply(
         "Iltimos quyidagi tugma orqali *Founders Community*ga [ro'yxatdan o'ting](https://login.circle.so/sign_up?request_host=community.sgfounders.school&user%5Binvitation_token%5D=b5df15ec8c8b3270123fbb2e3bea28cf33880285-53107530-d81e-46fe-b635-b757df0c9e55#email) va buni tasdiqlang",
         {
@@ -129,27 +137,27 @@ regis.use(async (ctx, next) => {
 regis.use(async (ctx, next) => {
   try {
     if (!admins.data[ctx.from.id]) return next();
-    if (admins.data[ctx.from.id] != "elon") return next();
+    if (admins.data[ctx.from.id] !== "elon") return next();
 
     admins.data[ctx.from.id] = "none";
     admins.save();
 
     if (!ctx.message) {
-      await ctx.reply("Habar topilmadi.");
+      return await ctx.reply("Habar topilmadi.");
     }
 
     const waitMessage = await ctx.reply(
-      "Foydalanuvchilarga elonni yuborish jarayoni boshlandi. Iltimos biroz kuting!"
+      "Foydalanuvchilarga elon yuborilmoqda... Biroz kuting!"
     );
 
     let sent = 0;
     let blocked = 0;
     let undone = 0;
 
-    done_users.data.forEach(async (item) => {
+    for (const userId of done_users.data) {
       try {
         await ctx.telegram.copyMessage(
-          item,
+          userId,
           ctx.chat.id,
           ctx.message.message_id
         );
@@ -157,16 +165,17 @@ regis.use(async (ctx, next) => {
       } catch (err) {
         blocked++;
       }
+      await new Promise((r) => setTimeout(r, 35));
+    }
 
-      await new Promise((resolve) => setTimeout(resolve, 35));
-    });
+    const users_id = Object.keys(users.data);
 
-    let users_id = Object.keys(users.data);
+    for (const userId of users_id) {
+      if (done_users.data.includes(Number(userId))) continue;
 
-    users_id.forEach(async (item) => {
       try {
         await ctx.telegram.sendMessage(
-          item,
+          userId,
           "Sizga yangi elon bor, uni ko'rish uchun iltimos avval quyidagi tugma orqali *Founders Community*ga [ro'yxatdan o'ting](https://login.circle.so/sign_up?request_host=community.sgfounders.school&user%5Binvitation_token%5D=b5df15ec8c8b3270123fbb2e3bea28cf33880285-53107530-d81e-46fe-b635-b757df0c9e55#email) va buni tasdiqlang",
           {
             parse_mode: "Markdown",
@@ -188,25 +197,27 @@ regis.use(async (ctx, next) => {
             },
           }
         );
-
         undone++;
-      } catch (error) {
+      } catch (err) {
         blocked++;
       }
-
-      await new Promise((resolve) => setTimeout(resolve, 35));
-    });
+      await new Promise((r) => setTimeout(r, 35));
+    }
 
     await ctx.deleteMessage(waitMessage.message_id);
+
     await ctx.reply(
-      `✅ Elon muvaffaqiyatli yuborildi!\n` +
-        `📤 Yuborildi: ${sent} ta\n` +
-        `🚫 Yuborolmadi: ${blocked} ta\n` +
-        `🕐 Tasdiqlanishi kutulmoqda: ${undone} ta`
+      `Elon muvaffaqiyatli tarqatildi!\n\n` +
+        `Yuborildi: ${sent} ta\n` +
+        `Tasdiqlanishi kutulmoqda: ${undone} ta\n` +
+        `Yuborib bo‘lmadi: ${blocked} ta`,
+      { parse_mode: "Markdown" }
     );
+    return;
   } catch (error) {
     errorHandler(error, ctx);
   }
 });
+
 
 export default regis;

@@ -1,28 +1,17 @@
 import { Telegraf } from "telegraf";
 import { config } from "./config.js";
-import action from "./src/actions.js";
 import regis from "./src/registration.middleware.js";
+import errorCatch from "./src/error_catch.js";
+import actionBefore from "./src/actions_before.js";
+import command from "./src/commands.js";
 
 const bot = new Telegraf(config.BOT_API_KEY);
 
-bot.use(action);
+bot.use(actionBefore);
 bot.use(regis);
+bot.use(command);
 
-bot.catch((err, ctx) => {
-  console.error(`Bot catch error:`, err);
-
-  bot.telegram
-    .sendMessage(config.TECH_ADMIN, `Bot error:\n${err.message}`)
-    .catch(() => {});
-
-  if (ctx) {
-    ctx
-      .reply(
-        "Botda xatolik yuz berdi, iltimos birozdan so'ng qayta urinib ko'ring."
-      )
-      .catch(() => console.log("Could not reply to user"));
-  }
-});
+bot.catch(errorCatch);
 
 bot
   .launch(() => console.log(`Bot is running smoothly!`))

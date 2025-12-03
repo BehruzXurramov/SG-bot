@@ -4,9 +4,9 @@ import errorHandler from "./error_handler.js";
 import { users, done_users } from "./ljdb.js";
 import chatCleaner from "./chat_cleaner.js";
 
-const action = new Composer();
+const actionBefore = new Composer();
 
-action.action("verify", async (ctx) => {
+actionBefore.action("verify", async (ctx) => {
   try {
     if (!ctx.from) return;
     if (done_users.data.includes(ctx.from.id)) return;
@@ -35,4 +35,16 @@ action.action("verify", async (ctx) => {
   }
 });
 
-export default action;
+actionBefore.action(/^elon_(.+)_(.+)$/, async (ctx) => {
+  try {
+    const chatId = ctx.match[1];
+    const messageId = ctx.match[2];
+
+    await ctx.deleteMessage(ctx.callbackQuery.message.message_id)
+    await ctx.telegram.copyMessage(ctx.from.id, chatId, messageId);
+  } catch (error) {
+    errorHandler(error, ctx);
+  }
+});
+
+export default actionBefore;
